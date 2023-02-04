@@ -4,6 +4,8 @@
 
 SpriteFont is some scripts for GM8.X to draw non-English text.
 
+![](images/image-7.png)
+
 ## Why
 
 GM8.X currently does not support non-English text drawing. Although there is a nice text drawing extension called FoxWrting (https://github.com/Noisyfox/FoxWriting), it only supports GM8.0 and has some compatibility issues.
@@ -31,3 +33,5 @@ Open your GM8 project, then import SpriteFont.gml (you can drag and drop), call 
 ![](images/image-5.png)
 
 ![](images/image-6.png)
+
+## 

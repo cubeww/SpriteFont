@@ -157,7 +157,7 @@ var sl, result;
 sl = ds_list_create();
 _sf_split_text(sl, str, w);
 if (sep < 0) {
-    sep = ds_map_find_value(global.sf_cur_font, 'size');
+    sep = _sf_get_font_size();
 }
 
 result = 0;
@@ -189,7 +189,7 @@ for (i = 0; i < len; i += 1) {
     }
 } 
 
-return ds_map_find_value(global.sf_cur_font, 'size') * newlines;
+return _sf_get_font_size() * newlines;
 
 
 #define sf_string_height_ext
@@ -204,7 +204,7 @@ var sl, result;
 sl = ds_list_create();
 _sf_split_text(sl, str, w);
 if (sep < 0) {
-    sep = ds_map_find_value(global.sf_cur_font, 'size');
+    sep = _sf_get_font_size();
 }
 
 result = ds_list_size(sl) * sep;
@@ -215,6 +215,7 @@ return result;
 
 #define _sf_split_text
 ///_sf_split_text(list, str, linewidth)
+///Convert text to a list.
 
 var sl, str, linewidth;
 sl = argument0;
@@ -256,16 +257,16 @@ while (st < len) {
             if (string_char_at(str, ed + 1) == chr(10) || string_char_at(str, ed + 1) == '#') {
                 break;
             } 
-            glyph = ds_map_find_value(global.sf_cur_font, string_char_at(str, ed + 1));
-            total += ds_map_find_value(glyph, 'xa');
+            glyph = _sf_get_glyph(string_char_at(str, ed + 1));
+            total += _sf_glyph_get_info(glyph, 'xa');
             ed += 1;
         }
 
         // if we shot past the end, then move back a bit until we fit.
         if (total > linewidth) {
             ed -= 1;
-            glyph = ds_map_find_value(global.sf_cur_font, string_char_at(str, ed + 1));
-            total -= ds_map_find_value(glyph, 'xa');
+            glyph = _sf_get_glyph(string_char_at(str, ed + 1));
+            total -= _sf_glyph_get_info(glyph, 'xa');
         }
 
         // END of line
@@ -311,6 +312,8 @@ while (st < len) {
 
 #define _sf_draw_text
 ///_sf_draw_text(str, x, y, linesep, linewidth, angle, xscale, yscale)
+///Draw multiline text.
+
 var str, xx, yy, linesep, linewidth, angle, xscale, yscale;
 str = argument0;
 xx = argument1;
@@ -332,7 +335,7 @@ ss = sin(ang);
 cc = cos(ang);
 
 var font_size;
-font_size = ds_map_find_value(global.sf_cur_font, 'size');
+font_size = _sf_get_font_size();
 
 if (linesep <= 0) {
     linesep = font_size;
@@ -381,6 +384,8 @@ ds_list_destroy(sl);
 
 #define _sf_draw_string_line
 ///_sf_draw_string_line(x, y, str, xscale, yscale, angle, ss, cc)
+///Draw a line of text.
+
 var xx, yy, str, xscale ,yscale, angle, ss, cc;
 xx = argument0;
 yy = argument1;
@@ -398,23 +403,19 @@ for (i = 0; i < len; i += 1) {
     var ch;
     ch = string_char_at(str, i + 1);
     
-    if (!ds_map_exists(global.sf_cur_font, ch)) {
-        continue;
-    }
-    
     var glyph;
-    glyph = ds_map_find_value(global.sf_cur_font, ch);
+    glyph = _sf_get_glyph(ch);
     
     var xo, yo, xa;
-    xo = ds_map_find_value(glyph, 'xo');
-    yo = ds_map_find_value(glyph, 'yo');
-    xa = ds_map_find_value(glyph, 'xa');
+    xo = _sf_glyph_get_info(glyph, 'xo');
+    yo = _sf_glyph_get_info(glyph, 'yo');
+    xa = _sf_glyph_get_info(glyph, 'xa');
 
-    draw_sprite_general(ds_map_find_value(global.sf_cur_font, 'spr'), 0, 
-        ds_map_find_value(glyph, 'x'),
-        ds_map_find_value(glyph, 'y'),
-        ds_map_find_value(glyph, 'w'),
-        ds_map_find_value(glyph, 'h'),
+    draw_sprite_general(_sf_get_sprite(), 0, 
+        _sf_glyph_get_info(glyph, 'x'),
+        _sf_glyph_get_info(glyph, 'y'),
+        _sf_glyph_get_info(glyph, 'w'),
+        _sf_glyph_get_info(glyph, 'h'),
         xx + (xo * cc + yo * ss) * xscale,
         yy + (xo * -ss + yo * cc) * yscale,
         xscale, yscale, angle,
@@ -422,19 +423,59 @@ for (i = 0; i < len; i += 1) {
         global.sf_cur_alpha  
     );  
     
-    xx = xx + cc * xa * xscale;
-    yy = yy - ss * xa * yscale;
+    xx += cc * xa * xscale;
+    yy -= ss * xa * yscale;
 }
 
 #define _sf_text_width
 ///_sf_text_width(str)
+///Measure the width of multiline text.
+
 var i, len, glyph, result;
 len = string_length(argument0);
 result = 0;
 for (i = 0; i < len; i += 1) {
-    glyph = ds_map_find_value(global.sf_cur_font, string_char_at(argument0, i + 1));
-    result += ds_map_find_value(glyph, 'xa');
+    glyph = _sf_get_glyph(string_char_at(argument0, i + 1));
+    result += _sf_glyph_get_info(glyph, 'xa');
 } 
 
 return result;
+
+#define _sf_get_glyph
+///_sf_get_glyph(char)
+///Get the glyph map of the specified character in the current font.
+
+if (ds_map_exists(global.sf_cur_font, argument0)) {
+    return ds_map_find_value(global.sf_cur_font, argument0);
+} else {
+    return ds_map_find_value(global.sf_cur_font, ' ');
+}
+
+
+#define _sf_glyph_get_info
+///_sf_glyph_get_info(glyph, property)
+///Get an property of the specified glyph.
+///
+/// Property:
+/// "x"
+/// "y"
+/// "w"
+/// "h"
+/// "xo"
+/// "yo"
+/// "xa"
+
+return ds_map_find_value(argument0, argument1);
+
+#define _sf_get_sprite
+///_sf_get_sprite()
+///Get the sprite page of the current font.
+
+return ds_map_find_value(global.sf_cur_font, 'spr');
+
+#define _sf_get_font_size
+///_sf_get_font_size()
+///Get the size (height) of the current font.
+
+return ds_map_find_value(global.sf_cur_font, 'size');
 
