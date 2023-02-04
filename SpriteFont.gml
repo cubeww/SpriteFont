@@ -383,7 +383,7 @@ for (i = 0; i < ds_list_size(sl); i += 1) {
 ds_list_destroy(sl);
 
 #define _sf_draw_string_line
-///_sf_draw_string_line(x, y, str, xscale, yscale, angle, ss, cc)
+                                                                                                                                                                             ///_sf_draw_string_line(x, y, str, xscale, yscale, angle, ss, cc)
 ///Draw a line of text.
 
 var xx, yy, str, xscale ,yscale, angle, ss, cc;
@@ -416,15 +416,15 @@ for (i = 0; i < len; i += 1) {
         _sf_glyph_get_info(glyph, 'y'),
         _sf_glyph_get_info(glyph, 'w'),
         _sf_glyph_get_info(glyph, 'h'),
-        xx + (xo * cc + yo * ss) * xscale,
-        yy + (xo * -ss + yo * cc) * yscale,
+        xx + xo * xscale * cc + yo * yscale * ss,
+        yy + xo * xscale * -ss + yo * yscale * cc,
         xscale, yscale, angle,
         global.sf_cur_color, global.sf_cur_color, global.sf_cur_color, global.sf_cur_color,
         global.sf_cur_alpha  
     );  
     
     xx += cc * xa * xscale;
-    yy -= ss * xa * yscale;
+    yy -= ss * xa * xscale;
 }
 
 #define _sf_text_width
